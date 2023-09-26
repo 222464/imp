@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
 
 typedef unsigned long u64;
 typedef unsigned int u32;
@@ -14,9 +16,8 @@ typedef float f32;
 typedef int b32;
 
 #define IMP_MAX(a,b) (((a) > (b)) ? (a) : (b))
-#define IMP_ASSERT(c) do { if (!(c)) { (*(int*)0=0); }} while (0);
 #define IMP_PCAST(type, p) (*((type*)&p))
 
-#define HASH_INITIAL 2166136261
+#define IMP_HASH_INITIAL 2166136261
 
 void imp_hash(u32* hash, const void* data, s32 size);
