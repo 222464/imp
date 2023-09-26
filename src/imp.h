@@ -8,17 +8,6 @@
 
 #define IMP_CHAR_BUFFER_SIZE 0x1000
 
-#ifndef IMP_VSNSPRINTF
-#define STB_SPRINTF_IMPLEMENTATION
-#include "third_party/stb_sprintf.h"
-#define IMP_VSNSPRINTF stbsp_vsnprintf
-#endif
-
-typedef struct {
-    char* str;
-    s32 len;
-} imp_Str;
-
 typedef struct {
     imp_Vec2f mouse;
     f32 mouse_scroll;
@@ -27,21 +16,9 @@ typedef struct {
     s32 mouse_pressed;
 } imp_Inputs;
 
-// Colors (or default colors) of various elements for some basic themeing
-typedef struct {
-    imp_Color background;
-    imp_Color grid;
-    imp_Color array;
-    imp_Color axis;
-} imp_Palette;
-
-void imp_set_default_palette(imp_Palette* palette);
-
 typedef struct {
     imp_Vec2i size;
 } imp_Canvas;
-
-typedef u32 imp_ID;
 
 typedef enum {
     IMP_BACKEND_TYPE_DEFAULT,

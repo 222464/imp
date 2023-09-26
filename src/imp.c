@@ -3,12 +3,12 @@
 #include "backends/default_backend.h"
 #include "backends/dynamic_backend.h"
 
-void imp_set_default_palette(imp_Palette* palette) {
-    palette->background = (imp_Color){ .r = 0, .g = 0, .b = 0, .a = 255 };
-    palette->grid = (imp_Color){ .r = 20, .g = 20, .b = 20, .a = 255 };
-    palette->array = (imp_Color){ .r = 255, .g = 0, .b = 0, .a = 255 };
-    palette->axis = (imp_Color){ .r = 192, .g = 192, .b = 192, .a = 255 };
-}
+#ifndef IMP_VSNSPRINTF
+#define STB_SPRINTF_IMPLEMENTATION
+#include "third_party/stb_sprintf.h"
+#define IMP_VSNSPRINTF stbsp_vsnprintf
+#endif
+
 
 imp_Str imp_set_str(char* s) {
     imp_Str out = { .str = s, .len = 0 };
@@ -48,7 +48,7 @@ void imp_init(imp_Context* ctx, b32 (*backend_run_commands)(imp_CommandList), b3
     ctx->backend_run_commands = backend_run_commands;
     ctx->backend_get_inputs = backend_get_inputs;
 
-    imp_set_default_palette(&ctx->palette);
+    ctx->palette = IMP_PALETTE_DARK_MODE;
 }
 
 void imp_init_default(imp_Context* ctx) {

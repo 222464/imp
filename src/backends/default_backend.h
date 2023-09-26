@@ -6,6 +6,7 @@
 
 typedef struct {
     b32 window_open;
+    imp_Vec2i canvas_size;
 } imp_DefaultBackendContext;
 
 b32 imp_default_backend_init();

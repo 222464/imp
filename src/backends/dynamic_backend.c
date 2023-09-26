@@ -18,6 +18,10 @@ b32 imp_dynamic_backend_init(const char* path) {
     return true;
 }
 
+b32 imp_dynamic_backend_set_canvas(imp_Canvas canvas, const char* title) {
+    return true;
+}
+
 b32 imp_dynamic_backend_get_inputs(imp_Inputs* inputs) {
     return true;
 }

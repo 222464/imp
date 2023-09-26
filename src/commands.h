@@ -6,23 +6,27 @@
 
 // ----------------------------------- Commands -----------------------------------
 
+typedef imp_Camera imp_CommandSetCamera;
+
 typedef struct {
-    imp_Vec2i size;
-    imp_Camera camera;
-    b32 visible;
-} imp_CommandSetCanvas;
+    imp_Color color;
+} imp_CommandClear;
 
 typedef enum {
-    IMP_ARRAY_STYLE_CURVE = 0,
-    IMP_ARRAY_STYLE_POINTS
-} imp_ArrayStyle;
+    IMP_POINT_LIST_STYLE_CURVE = 0,
+    IMP_POINT_LIST_STYLE_POINTS
+} imp_PointListStyle;
 
 typedef struct {
-    imp_Vec3f* curve;
+    imp_Vec3f* data;
     s32 num_elements;
 
-    imp_ArrayStyle style;
-} imp_CommandDrawArray;
+    imp_PointListStyle style;
+
+    f32 thickness;
+
+    imp_Color color;
+} imp_CommandDrawPointList;
 
 typedef struct {
     imp_Vec3f start;
@@ -32,15 +36,28 @@ typedef struct {
     imp_Vec2f range;
     s32 num_ticks;
     f32 tick_thickness;
+
+    imp_Color color;
 } imp_CommandDrawAxis;
+
+typedef struct {
+    imp_Vec3f position;
+    f32 size;
+    imp_Str text;
+    
+    imp_Color color;
+} imp_CommandDrawAnnotation;
 
 typedef struct {
     void* user_data;
 } imp_CommandCustom;
 
 typedef enum {
-    IMP_COMMAND_DRAW_ARRAY,
+    IMP_COMMAND_SET_CAMERA,
+    IMP_COMMAND_CLEAR,
+    IMP_COMMAND_DRAW_POINT_LIST,
     IMP_COMMAND_DRAW_AXIS,
+    IMP_COMMAND_DRAW_ANNOTATION,
     IMP_COMMAND_CUSTOM
 } imp_CommandType;
 
@@ -48,8 +65,11 @@ typedef struct {
     imp_CommandType type;
 
     union {
-        imp_CommandDrawArray array;
+        imp_CommandSetCamera camera;
+        imp_CommandClear clear;
+        imp_CommandDrawPointList point_list;
         imp_CommandDrawAxis axis;
+        imp_CommandDrawAnnotation annotation;
         imp_CommandCustom custom;
     };
 } imp_Command;
