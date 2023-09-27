@@ -16,6 +16,10 @@ b32 imp_default_backend_init() {
 }
 
 b32 imp_default_backend_get_inputs(imp_Inputs* inputs) {
+    assert(default_ctx != NULL && "Need a backend context in order to get input!");
+
+    inputs->exit = WindowShouldClose();
+
     return true;
 }
 
@@ -29,13 +33,15 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
     InitWindow(canvas.size.X, canvas.size.Y, title);
 
     default_ctx->window_open = true;
-    default_ctx->canvas_size = canvas.size;
+    default_ctx->canvas = canvas;
 
     return true;
 }
 
 b32 imp_default_backend_run_commands(imp_CommandList command_list) {
     BeginDrawing();
+
+    ClearBackground((Color){ default_ctx->canvas.clear_color.R, default_ctx->canvas.clear_color.G, default_ctx->canvas.clear_color.B, default_ctx->canvas.clear_color.A });
 
     Camera3D camera_3D;
 
@@ -50,11 +56,6 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
             camera_3D.projection = (command.camera.mode == IMP_CAMERA_ORTHO ? CAMERA_ORTHOGRAPHIC : CAMERA_PERSPECTIVE);
 
             BeginMode3D(camera_3D);
-
-            break;
-        }
-        case IMP_COMMAND_CLEAR: {
-            ClearBackground((Color){ command.clear.color.R, command.clear.color.G, command.clear.color.B, command.clear.color.A });
 
             break;
         }

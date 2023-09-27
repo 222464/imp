@@ -52,11 +52,36 @@ void imp_init(imp_Context* ctx, b32 (*backend_run_commands)(imp_CommandList), b3
 }
 
 void imp_init_default(imp_Context* ctx) {
+    imp_default_backend_init();
+
+    ctx->backend_type = IMP_BACKEND_TYPE_DEFAULT;
+
     imp_init(ctx, &imp_default_backend_run_commands, &imp_default_backend_get_inputs);
 }
 
-void imp_init_dynamic(imp_Context* ctx) {
+void imp_init_dynamic(imp_Context* ctx, const char* path) {
+    imp_dynamic_backend_init(path);
+
+    ctx->backend_type = IMP_BACKEND_TYPE_DYNAMIC;
+
     imp_init(ctx, &imp_dynamic_backend_run_commands, &imp_dynamic_backend_get_inputs);
+}
+
+void imp_deinit(imp_Context* ctx) {
+    if (ctx->backend_type == IMP_BACKEND_TYPE_DEFAULT)
+        imp_default_backend_deinit();
+    else if (ctx->backend_type == IMP_BACKEND_TYPE_DYNAMIC)
+        imp_dynamic_backend_deinit();
+}
+
+
+void imp_canvas(imp_Context* ctx, imp_Canvas canvas, const char* title) {
+    ctx->canvas = canvas;
+
+    if (ctx->backend_type == IMP_BACKEND_TYPE_DEFAULT)
+        imp_default_backend_set_canvas(canvas, title);
+    else if (ctx->backend_type == IMP_BACKEND_TYPE_DYNAMIC)
+        imp_dynamic_backend_set_canvas(canvas, title);
 }
 
 void imp_begin(imp_Context* ctx) {
@@ -68,5 +93,29 @@ void imp_begin(imp_Context* ctx) {
 }
 
 void imp_end(imp_Context* ctx) {
+    (*ctx->backend_run_commands)(ctx->command_list);
+}
 
+void imp_camera(imp_Context* ctx, imp_Camera camera) {
+    imp_Command command;
+    command.type = IMP_COMMAND_DRAW_POINT_LIST;
+
+    command.camera = camera;
+
+    imp_command_list_add(ctx->command_list, command);
+}
+
+void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style) {
+    imp_point_list_color(ctx, data, num_elements, style, ctx->palette.point_list);
+}
+
+void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color) {
+    imp_Command command;
+    command.type = IMP_COMMAND_DRAW_POINT_LIST;
+
+    command.point_list.color = color;
+
+    command.point_list.data = data;
+    command.point_list.num_elements = num_elements;
+    command.point_list.style = style;
 }

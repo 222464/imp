@@ -9,26 +9,29 @@
 #define IMP_CHAR_BUFFER_SIZE 0x1000
 
 typedef struct {
+    b32 exit;
     imp_Vec2f mouse;
     f32 mouse_scroll;
     s32 mouse_down;
-    imp_Vec2f last_mouse;
-    s32 mouse_pressed;
 } imp_Inputs;
 
 typedef struct {
     imp_Vec2i size;
+    imp_Color clear_color;
 } imp_Canvas;
 
 typedef enum {
     IMP_BACKEND_TYPE_DEFAULT,
-    IMP_BACKEND_TYPE_DYNAMIC
+    IMP_BACKEND_TYPE_DYNAMIC,
+    IMP_BACKEND_TYPE_OTHER
 } imp_BackendType;
 
 typedef struct {
     // pointers to the backend functions
     b32 (*backend_run_commands)(imp_CommandList);
     b32 (*backend_get_inputs)(imp_Inputs* inputs);
+
+    imp_BackendType backend_type;
 
     imp_Inputs inputs;
     imp_Inputs inputs_prev; // last frame of input
@@ -51,9 +54,16 @@ imp_Str imp_strf(imp_Context* ctx, char* fmt, ...);
 // Main immediate mode interface
 void imp_init(imp_Context* ctx, b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs));
 void imp_init_default(imp_Context* ctx);
-void imp_init_dynamic(imp_Context* ctx);
+void imp_init_dynamic(imp_Context* ctx, const char* path);
+
+void imp_deinit(imp_Context* ctx);
+
+void imp_canvas(imp_Context* ctx, imp_Canvas canvas, const char* title);
 
 void imp_begin(imp_Context* ctx);
 void imp_end(imp_Context* ctx);
 
-void imp_begin_plot();
+void imp_camera(imp_Context* ctx, imp_Camera camera);
+
+void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style);
+void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color);

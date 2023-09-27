@@ -85,8 +85,6 @@ typedef struct {
     imp_Vec3f target;
     imp_Vec3f up;
     f32 fov_y;
-    f32 zoom;
-    f32 rotation;
     imp_CameraMode mode;
 } imp_Camera;
 
@@ -96,8 +94,6 @@ typedef struct {
     .target = { 0.0f, 0.0f, 0.0f }, \
     .up = { 0.0f, 1.0f, 0.0f }, \
     .fov_y = 0.0f, \
-    .zoom = 1.0f, \
-    .rotation = 0.0f, \
     .mode = IMP_CAMERA_ORTHO \
 })
 
@@ -107,7 +103,5 @@ typedef struct {
     .target = { 0.0f, 0.0f, 0.0f }, \
     .up = { 0.0f, 1.0f, 0.0f }, \
     .fov_y = HMM_PI * 0.5f, \
-    .zoom = 0.0f, \
-    .rotation = 0.0f, \
     .mode = IMP_CAMERA_PERSPECTIVE \
 })

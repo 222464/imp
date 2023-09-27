@@ -8,10 +8,6 @@
 
 typedef imp_Camera imp_CommandSetCamera;
 
-typedef struct {
-    imp_Color color;
-} imp_CommandClear;
-
 typedef enum {
     IMP_POINT_LIST_STYLE_CURVE = 0,
     IMP_POINT_LIST_STYLE_POINTS
@@ -54,7 +50,6 @@ typedef struct {
 
 typedef enum {
     IMP_COMMAND_SET_CAMERA,
-    IMP_COMMAND_CLEAR,
     IMP_COMMAND_DRAW_POINT_LIST,
     IMP_COMMAND_DRAW_AXIS,
     IMP_COMMAND_DRAW_ANNOTATION,
@@ -66,7 +61,6 @@ typedef struct {
 
     union {
         imp_CommandSetCamera camera;
-        imp_CommandClear clear;
         imp_CommandDrawPointList point_list;
         imp_CommandDrawAxis axis;
         imp_CommandDrawAnnotation annotation;
