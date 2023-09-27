@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 #define IMP_CHAR_BUFFER_SIZE 0x1000
-#define IMP_DEFAULT_THICKNESS 0.01f
-#define IMP_DEFAULT_TICK_THICKNESS 0.01f
+#define IMP_DEFAULT_THICKNESS 0.005f
+#define IMP_DEFAULT_TICK_THICKNESS 0.015f
 
 typedef struct {
     b32 exit;

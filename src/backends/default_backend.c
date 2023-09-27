@@ -93,7 +93,7 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
         case IMP_COMMAND_DRAW_AXIS: {
             imp_Color use_color = command.axis.color;
 
-            DrawLine3D((Vector3){ command.axis.start.X, command.axis.start.Y, command.axis.start.Z }, (Vector3){ command.axis.end.X, command.axis.end.Y, command.axis.end.Z },
+            DrawCapsule((Vector3){ command.axis.start.X, command.axis.start.Y, command.axis.start.Z }, (Vector3){ command.axis.end.X, command.axis.end.Y, command.axis.end.Z }, command.axis.thickness, 8, 0,
                     (Color){ use_color.R, use_color.G, use_color.B, use_color.A });
 
             // Draw ticks
