@@ -115,3 +115,20 @@ void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, i
 
     imp_command_list_add(&ctx->command_list, command);
 }
+
+void imp_axis(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks) {
+    imp_axis_color(ctx, start, end, num_ticks, ctx->palette.axis);
+}
+
+void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color) {
+    imp_Command command;
+    command.type = IMP_COMMAND_DRAW_AXIS;
+
+    command.axis.color = color;
+
+    command.axis.start = start;
+    command.axis.end = end;
+    command.axis.num_ticks = num_ticks;
+
+    imp_command_list_add(&ctx->command_list, command);
+}

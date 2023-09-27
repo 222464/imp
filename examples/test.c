@@ -15,7 +15,7 @@ int main() {
 
     imp_Camera camera = IMP_DEFAULT_CAMERA3D;
 
-    camera.position = (imp_Vec3f){ 10.0f, 10.0f, 10.0f };
+    camera.position = (imp_Vec3f){ 4.0f, 4.0f, 4.0f };
 
     while (!ctx.inputs.exit) {
         imp_begin(&ctx);

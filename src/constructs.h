@@ -99,7 +99,7 @@ typedef struct {
 
 #define IMP_DEFAULT_CAMERA3D  \
 ((imp_Camera){ \
-    .position = { 1.0f, 1.0f, 1.0f }, \
+    .position = { -1.0f, 1.0f, -1.0f }, \
     .target = { 0.0f, 0.0f, 0.0f }, \
     .up = { 0.0f, 1.0f, 0.0f }, \
     .fov_y = HMM_PI * 0.5f, \

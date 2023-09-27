@@ -54,7 +54,7 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
 
     camera_3D.position = (Vector3){ default_ctx->camera.position.X, default_ctx->camera.position.Y, default_ctx->camera.position.Z };
     camera_3D.target = (Vector3){ default_ctx->camera.target.X, default_ctx->camera.target.Y, default_ctx->camera.target.Z };
-    camera_3D.fovy = default_ctx->camera.fov_y;
+    camera_3D.fovy = default_ctx->camera.fov_y * RAD2DEG;
     camera_3D.projection = (default_ctx->camera.mode == IMP_CAMERA_ORTHO ? CAMERA_ORTHOGRAPHIC : CAMERA_PERSPECTIVE);
 
     BeginMode3D(camera_3D);
