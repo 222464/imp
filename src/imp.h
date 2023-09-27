@@ -28,6 +28,8 @@ typedef enum {
 
 typedef struct {
     // pointers to the backend functions
+    b32 (*backend_set_canvas)(imp_Canvas, const char*);
+    b32 (*backend_set_camera)(imp_Camera);
     b32 (*backend_run_commands)(imp_CommandList);
     b32 (*backend_get_inputs)(imp_Inputs* inputs);
 
@@ -44,6 +46,7 @@ typedef struct {
     imp_CommandList command_list;
 
     imp_Canvas canvas;
+    imp_Camera camera;
 } imp_Context;
 
 imp_Str imp_set_str(char* s);
@@ -52,7 +55,7 @@ imp_Str imp_strfv(imp_Context* ctx, char* fmt, va_list args);
 imp_Str imp_strf(imp_Context* ctx, char* fmt, ...);
 
 // Main immediate mode interface
-void imp_init(imp_Context* ctx, b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs));
+void imp_init(imp_Context* ctx, b32 (*backend_set_canvas)(imp_Canvas, const char*), b32 (*backend_set_camera)(imp_Camera), b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs));
 void imp_init_default(imp_Context* ctx);
 void imp_init_dynamic(imp_Context* ctx, const char* path);
 

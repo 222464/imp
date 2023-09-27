@@ -49,7 +49,6 @@ typedef struct {
 } imp_CommandCustom;
 
 typedef enum {
-    IMP_COMMAND_SET_CAMERA,
     IMP_COMMAND_DRAW_POINT_LIST,
     IMP_COMMAND_DRAW_AXIS,
     IMP_COMMAND_DRAW_ANNOTATION,
@@ -60,7 +59,6 @@ typedef struct {
     imp_CommandType type;
 
     union {
-        imp_CommandSetCamera camera;
         imp_CommandDrawPointList point_list;
         imp_CommandDrawAxis axis;
         imp_CommandDrawAnnotation annotation;
@@ -73,5 +71,5 @@ typedef struct {
     s32 num_commands;
 } imp_CommandList;
 
-void imp_command_list_clear(imp_CommandList command_list);
-b32 imp_command_list_add(imp_CommandList command_list, imp_Command command);
+void imp_command_list_clear(imp_CommandList* command_list);
+b32 imp_command_list_add(imp_CommandList* command_list, imp_Command command);

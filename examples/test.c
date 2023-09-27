@@ -13,12 +13,11 @@ int main() {
 
     imp_canvas(&ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
 
-
     imp_Camera camera = IMP_DEFAULT_CAMERA3D;
 
-    while (!ctx.inputs.exit) {
-        printf("test\n");
+    camera.position = (imp_Vec3f){ 10.0f, 10.0f, 10.0f };
 
+    while (!ctx.inputs.exit) {
         imp_begin(&ctx);
 
         imp_camera(&ctx, camera);

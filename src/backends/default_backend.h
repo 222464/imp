@@ -6,12 +6,15 @@
 
 typedef struct {
     b32 window_open;
+    imp_Camera camera;
     imp_Canvas canvas;
 } imp_DefaultBackendContext;
 
 b32 imp_default_backend_init();
 
 b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title);
+
+b32 imp_default_backend_set_camera(imp_Camera camera);
 
 b32 imp_default_backend_get_inputs(imp_Inputs* inputs);
 

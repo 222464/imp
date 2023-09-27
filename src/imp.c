@@ -9,7 +9,6 @@
 #define IMP_VSNSPRINTF stbsp_vsnprintf
 #endif
 
-
 imp_Str imp_set_str(char* s) {
     imp_Str out = { .str = s, .len = 0 };
 
@@ -42,9 +41,11 @@ imp_Str imp_strf(imp_Context* ctx, char* fmt, ...) {
     return result;
 }
 
-void imp_init(imp_Context* ctx, b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs)) {
+void imp_init(imp_Context* ctx, b32 (*backend_set_canvas)(imp_Canvas, const char*), b32 (*backend_set_camera)(imp_Camera), b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs)) {
     *ctx = (imp_Context){0};
 
+    ctx->backend_set_canvas = backend_set_canvas;
+    ctx->backend_set_camera = backend_set_camera;
     ctx->backend_run_commands = backend_run_commands;
     ctx->backend_get_inputs = backend_get_inputs;
 
@@ -56,7 +57,7 @@ void imp_init_default(imp_Context* ctx) {
 
     ctx->backend_type = IMP_BACKEND_TYPE_DEFAULT;
 
-    imp_init(ctx, &imp_default_backend_run_commands, &imp_default_backend_get_inputs);
+    imp_init(ctx, &imp_default_backend_set_canvas, &imp_default_backend_set_camera, &imp_default_backend_run_commands, &imp_default_backend_get_inputs);
 }
 
 void imp_init_dynamic(imp_Context* ctx, const char* path) {
@@ -64,7 +65,7 @@ void imp_init_dynamic(imp_Context* ctx, const char* path) {
 
     ctx->backend_type = IMP_BACKEND_TYPE_DYNAMIC;
 
-    imp_init(ctx, &imp_dynamic_backend_run_commands, &imp_dynamic_backend_get_inputs);
+    imp_init(ctx, &imp_dynamic_backend_set_canvas, &imp_dynamic_backend_set_camera, &imp_dynamic_backend_run_commands, &imp_dynamic_backend_get_inputs);
 }
 
 void imp_deinit(imp_Context* ctx) {
@@ -74,14 +75,10 @@ void imp_deinit(imp_Context* ctx) {
         imp_dynamic_backend_deinit();
 }
 
-
 void imp_canvas(imp_Context* ctx, imp_Canvas canvas, const char* title) {
     ctx->canvas = canvas;
 
-    if (ctx->backend_type == IMP_BACKEND_TYPE_DEFAULT)
-        imp_default_backend_set_canvas(canvas, title);
-    else if (ctx->backend_type == IMP_BACKEND_TYPE_DYNAMIC)
-        imp_dynamic_backend_set_canvas(canvas, title);
+    (*ctx->backend_set_canvas)(canvas, title);
 }
 
 void imp_begin(imp_Context* ctx) {
@@ -97,12 +94,9 @@ void imp_end(imp_Context* ctx) {
 }
 
 void imp_camera(imp_Context* ctx, imp_Camera camera) {
-    imp_Command command;
-    command.type = IMP_COMMAND_DRAW_POINT_LIST;
+    ctx->camera = camera;
 
-    command.camera = camera;
-
-    imp_command_list_add(ctx->command_list, command);
+    (*ctx->backend_set_camera)(camera);
 }
 
 void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style) {
@@ -118,4 +112,6 @@ void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, i
     command.point_list.data = data;
     command.point_list.num_elements = num_elements;
     command.point_list.style = style;
+
+    imp_command_list_add(&ctx->command_list, command);
 }

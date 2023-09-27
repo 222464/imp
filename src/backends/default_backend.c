@@ -38,6 +38,13 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
     return true;
 }
 
+b32 imp_default_backend_set_camera(imp_Camera camera) {
+    assert(default_ctx != NULL && "Need a backend context in order to set a camera!");
+
+    default_ctx->camera = camera;
+
+    return true;
+}
 b32 imp_default_backend_run_commands(imp_CommandList command_list) {
     BeginDrawing();
 
@@ -45,31 +52,30 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
 
     Camera3D camera_3D;
 
+    camera_3D.position = (Vector3){ default_ctx->camera.position.X, default_ctx->camera.position.Y, default_ctx->camera.position.Z };
+    camera_3D.target = (Vector3){ default_ctx->camera.target.X, default_ctx->camera.target.Y, default_ctx->camera.target.Z };
+    camera_3D.fovy = default_ctx->camera.fov_y;
+    camera_3D.projection = (default_ctx->camera.mode == IMP_CAMERA_ORTHO ? CAMERA_ORTHOGRAPHIC : CAMERA_PERSPECTIVE);
+
+    BeginMode3D(camera_3D);
+
     for (s32 i = 0; i < command_list.num_commands; i++) {
         imp_Command command = command_list.commands[i];
 
         switch (command.type) {
-        case IMP_COMMAND_SET_CAMERA: {
-            camera_3D.position = (Vector3){ command.camera.position.X, command.camera.position.Y, command.camera.position.Z };
-            camera_3D.target = (Vector3){ command.camera.target.X, command.camera.target.Y, command.camera.target.Z };
-            camera_3D.fovy = command.camera.fov_y;
-            camera_3D.projection = (command.camera.mode == IMP_CAMERA_ORTHO ? CAMERA_ORTHOGRAPHIC : CAMERA_PERSPECTIVE);
-
-            BeginMode3D(camera_3D);
-
-            break;
-        }
         case IMP_COMMAND_DRAW_POINT_LIST: {
-            imp_Vec3f point_prev = command.point_list.data[0];
-
             imp_Color use_color = command.point_list.color;
 
             if (command.point_list.style == IMP_POINT_LIST_STYLE_CURVE) {
+                imp_Vec3f point_prev = command.point_list.data[0];
+
                 for (int i = 1; i < command.point_list.num_elements; i++) {
                     imp_Vec3f point = command.point_list.data[i];
 
                     DrawLine3D((Vector3){ point_prev.X, point_prev.Y, point_prev.Z }, (Vector3){ point.X, point.Y, point.Z },
                             (Color){ use_color.R, use_color.G, use_color.B, use_color.A });
+
+                    point_prev = point;
                 }
             }
             else {
@@ -117,6 +123,8 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
         }
     }
 
+    EndMode3D();
+    
     Camera2D camera_2D = { 0 };
     camera_2D.zoom = 1.0f;
 
