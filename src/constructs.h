@@ -89,7 +89,7 @@ typedef struct {
 } imp_Camera;
 
 #define IMP_DEFAULT_CAMERA2D  \
-(imp_Camera imp_default_camera { \
+((imp_Camera){ \
     .position = { 0.0f, 0.0f, 1.0f }, \
     .target = { 0.0f, 0.0f, 0.0f }, \
     .up = { 0.0f, 1.0f, 0.0f }, \
@@ -98,7 +98,7 @@ typedef struct {
 })
 
 #define IMP_DEFAULT_CAMERA3D  \
-(imp_Camera imp_default_camera { \
+((imp_Camera){ \
     .position = { 1.0f, 1.0f, 1.0f }, \
     .target = { 0.0f, 0.0f, 0.0f }, \
     .up = { 0.0f, 1.0f, 0.0f }, \
