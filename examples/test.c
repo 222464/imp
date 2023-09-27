@@ -15,14 +15,14 @@ int main() {
 
     imp_Camera camera = IMP_DEFAULT_CAMERA3D;
 
-    camera.position = (imp_Vec3f){ 4.0f, 4.0f, 4.0f };
-
     while (!ctx.inputs.exit) {
         imp_begin(&ctx);
 
         imp_camera(&ctx, camera);
 
         imp_point_list(&ctx, data, 32, IMP_POINT_LIST_STYLE_CURVE);
+
+        imp_axes(&ctx, 10);
 
         imp_end(&ctx);
     }
