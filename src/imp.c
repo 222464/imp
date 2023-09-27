@@ -132,3 +132,17 @@ void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ti
 
     imp_command_list_add(&ctx->command_list, command);
 }
+
+void imp_axes(imp_Context* ctx, s32 num_ticks) {
+    imp_axes_color(ctx, num_ticks, ctx->palette.axis);
+}
+
+void imp_axes_color(imp_Context* ctx, s32 num_ticks, imp_Color color) {
+    imp_Vec3f x_axis = (imp_Vec3f){ 1.0f, 0.0f, 0.0f };
+    imp_Vec3f y_axis = (imp_Vec3f){ 0.0f, 1.0f, 0.0f };
+    imp_Vec3f z_axis = (imp_Vec3f){ 0.0f, 0.0f, 1.0f };
+
+    imp_axis_color(ctx, (imp_Vec3f){ -x_axis.X, -x_axis.Y, -x_axis.Z }, x_axis, num_ticks, color);
+    imp_axis_color(ctx, (imp_Vec3f){ -y_axis.X, -y_axis.Y, -y_axis.Z }, x_axis, num_ticks, color);
+    imp_axis_color(ctx, (imp_Vec3f){ -z_axis.X, -z_axis.Y, -z_axis.Z }, x_axis, num_ticks, color);
+}

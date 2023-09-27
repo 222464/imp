@@ -72,3 +72,5 @@ void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_Poi
 void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color);
 void imp_axis(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks);
 void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color);
+void imp_axes(imp_Context* ctx, s32 num_ticks);
+void imp_axes_color(imp_Context* ctx, s32 num_ticks, imp_Color color);
