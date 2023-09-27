@@ -83,7 +83,7 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
                 for (int i = 0; i < command.point_list.num_elements; i++) {
                     imp_Vec3f point = command.point_list.data[i];
 
-                    DrawPoint3D((Vector3){ point.X, point.Y, point.Z },
+                    DrawSphere((Vector3){ point.X, point.Y, point.Z }, command.point_list.thickness,
                             (Color){ use_color.R, use_color.G, use_color.B, use_color.A });
                 }
             }
@@ -106,7 +106,7 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
 
                 imp_Vec3f pos = HMM_AddV3(command.axis.start, HMM_MulV3F(diff, ratio));
 
-                DrawPoint3D((Vector3){ pos.X, pos.Y, pos.Z }, 
+                DrawSphere((Vector3){ pos.X, pos.Y, pos.Z }, command.axis.tick_thickness,
                         (Color){ use_color.R, use_color.G, use_color.B, use_color.A });
             }
 

@@ -7,6 +7,8 @@
 #include <stdio.h>
 
 #define IMP_CHAR_BUFFER_SIZE 0x1000
+#define IMP_DEFAULT_THICKNESS 0.01f
+#define IMP_DEFAULT_TICK_THICKNESS 0.01f
 
 typedef struct {
     b32 exit;
@@ -69,8 +71,8 @@ void imp_end(imp_Context* ctx);
 void imp_camera(imp_Context* ctx, imp_Camera camera);
 
 void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style);
-void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color);
+void imp_point_list_ex(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color, f32 thickness);
 void imp_axis(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks);
-void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color);
+void imp_axis_ex(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color, f32 thickness, f32 tick_thickness);
 void imp_axes(imp_Context* ctx, s32 num_ticks);
-void imp_axes_color(imp_Context* ctx, s32 num_ticks, imp_Color color);
+void imp_axes_ex(imp_Context* ctx, s32 num_ticks, imp_Color color, f32 thickness, f32 tick_thickness);

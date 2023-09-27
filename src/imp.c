@@ -100,10 +100,10 @@ void imp_camera(imp_Context* ctx, imp_Camera camera) {
 }
 
 void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style) {
-    imp_point_list_color(ctx, data, num_elements, style, ctx->palette.point_list);
+    imp_point_list_ex(ctx, data, num_elements, style, ctx->palette.point_list, IMP_DEFAULT_THICKNESS);
 }
 
-void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color) {
+void imp_point_list_ex(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color, f32 thickness) {
     imp_Command command;
     command.type = IMP_COMMAND_DRAW_POINT_LIST;
 
@@ -112,15 +112,16 @@ void imp_point_list_color(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, i
     command.point_list.data = data;
     command.point_list.num_elements = num_elements;
     command.point_list.style = style;
+    command.point_list.thickness = thickness;
 
     imp_command_list_add(&ctx->command_list, command);
 }
 
 void imp_axis(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks) {
-    imp_axis_color(ctx, start, end, num_ticks, ctx->palette.axis);
+    imp_axis_ex(ctx, start, end, num_ticks, ctx->palette.axis, IMP_DEFAULT_THICKNESS, IMP_DEFAULT_TICK_THICKNESS);
 }
 
-void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color) {
+void imp_axis_ex(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ticks, imp_Color color, f32 thickness, f32 tick_thickness) {
     imp_Command command;
     command.type = IMP_COMMAND_DRAW_AXIS;
 
@@ -129,20 +130,22 @@ void imp_axis_color(imp_Context* ctx, imp_Vec3f start, imp_Vec3f end, s32 num_ti
     command.axis.start = start;
     command.axis.end = end;
     command.axis.num_ticks = num_ticks;
+    command.axis.thickness = thickness;
+    command.axis.tick_thickness = tick_thickness;
 
     imp_command_list_add(&ctx->command_list, command);
 }
 
 void imp_axes(imp_Context* ctx, s32 num_ticks) {
-    imp_axes_color(ctx, num_ticks, ctx->palette.axis);
+    imp_axes_ex(ctx, num_ticks, ctx->palette.axis, IMP_DEFAULT_THICKNESS, IMP_DEFAULT_TICK_THICKNESS);
 }
 
-void imp_axes_color(imp_Context* ctx, s32 num_ticks, imp_Color color) {
+void imp_axes_ex(imp_Context* ctx, s32 num_ticks, imp_Color color, f32 thickness, f32 tick_thickness) {
     imp_Vec3f x_axis = (imp_Vec3f){ 1.0f, 0.0f, 0.0f };
     imp_Vec3f y_axis = (imp_Vec3f){ 0.0f, 1.0f, 0.0f };
     imp_Vec3f z_axis = (imp_Vec3f){ 0.0f, 0.0f, 1.0f };
 
-    imp_axis_color(ctx, (imp_Vec3f){ -x_axis.X, -x_axis.Y, -x_axis.Z }, x_axis, num_ticks, color);
-    imp_axis_color(ctx, (imp_Vec3f){ -y_axis.X, -y_axis.Y, -y_axis.Z }, y_axis, num_ticks, color);
-    imp_axis_color(ctx, (imp_Vec3f){ -z_axis.X, -z_axis.Y, -z_axis.Z }, z_axis, num_ticks, color);
+    imp_axis_ex(ctx, (imp_Vec3f){ -x_axis.X, -x_axis.Y, -x_axis.Z }, x_axis, num_ticks, color, thickness, tick_thickness);
+    imp_axis_ex(ctx, (imp_Vec3f){ -y_axis.X, -y_axis.Y, -y_axis.Z }, y_axis, num_ticks, color, thickness, tick_thickness);
+    imp_axis_ex(ctx, (imp_Vec3f){ -z_axis.X, -z_axis.Y, -z_axis.Z }, z_axis, num_ticks, color, thickness, tick_thickness);
 }
