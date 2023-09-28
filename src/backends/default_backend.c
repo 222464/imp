@@ -2,6 +2,14 @@
 
 imp_DefaultBackendContext* default_ctx = NULL;
 
+const char* curve_vs =
+#include "shaders/curve.vs"
+;
+
+const char* curve_fs =
+#include "shaders/curve.fs"
+;
+
 b32 imp_default_backend_init() {
     assert(default_ctx == NULL && "Default backend already initialized!");
 
@@ -32,8 +40,27 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
 
     InitWindow(canvas.size.X, canvas.size.Y, title);
 
+    SetTargetFPS(144);
+
     default_ctx->window_open = true;
     default_ctx->canvas = canvas;
+
+    if (!default_ctx->resources_ready) {
+        // get resources
+        default_ctx->cylinder = GenMeshCylinder(1.0f, 1.0f, 8);
+        default_ctx->sphere = GenMeshSphere(1.0f, 8, 8);
+
+        default_ctx->curve_shader = LoadShaderFromMemory(curve_vs, curve_fs);
+
+        default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(default_ctx->curve_shader, "mvp");
+        default_ctx->curve_col_diffuse_loc = GetShaderLocation(default_ctx->curve_shader, "color");
+        default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(default_ctx->curve_shader, "instanceTransform");
+
+        default_ctx->curve_material = LoadMaterialDefault();
+        default_ctx->curve_material.shader = default_ctx->curve_shader;
+
+        default_ctx->resources_ready = true;
+    }
 
     return true;
 }
@@ -45,6 +72,7 @@ b32 imp_default_backend_set_camera(imp_Camera camera) {
 
     return true;
 }
+
 b32 imp_default_backend_run_commands(imp_CommandList command_list) {
     BeginDrawing();
 
@@ -73,11 +101,31 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
                 for (int i = 1; i < command.point_list.num_elements; i++) {
                     imp_Vec3f point = command.point_list.data[i];
 
-                    DrawLine3D((Vector3){ point_prev.X, point_prev.Y, point_prev.Z }, (Vector3){ point.X, point.Y, point.Z },
-                            (Color){ use_color.R, use_color.G, use_color.B, use_color.A });
+                    imp_Vec3f diff = HMM_SubV3(point, point_prev);
+                    
+                    f32 length = HMM_LenV3(diff);
+
+                    // Determine transform
+                    imp_Mat4 transform = HMM_MulM4(HMM_Rotate_LH(HMM_PI * 0.5f, (imp_Vec3f){ 0.0f, 0.0f, 1.0f }), HMM_Scale((imp_Vec3f){ command.point_list.thickness, length, command.point_list.thickness}));
+
+                    if (HMM_EqV3(diff, (imp_Vec3f){ 0.0f, 1.0f, 0.0f }))
+                        transform = HMM_MulM4(HMM_Translate(point_prev), HMM_MulM4(HMM_LookAt_LH(point_prev, point, (imp_Vec3f){ 0.0f, 0.0f, 1.0f }), transform));
+                    else
+                        transform = HMM_MulM4(HMM_Translate(point_prev), HMM_MulM4(HMM_LookAt_LH(point_prev, point, (imp_Vec3f){ 0.0f, 1.0f, 0.0f }), transform));
+
+                    // Transpose for Raylib
+                    transform = HMM_Transpose(transform);
+
+                    default_ctx->instance_transforms[i - 1] = *(Matrix*)(transform.Elements);
 
                     point_prev = point;
                 }
+
+                Vector4 use_colorf = (Vector4){ use_color.R / 255.0f, use_color.G / 255.0f, use_color.B / 255.0f, use_color.A / 255.0f };
+
+                SetShaderValue(default_ctx->curve_shader, default_ctx->curve_col_diffuse_loc, &use_colorf, SHADER_UNIFORM_VEC4);
+
+                DrawMeshInstanced(default_ctx->cylinder, default_ctx->curve_material, default_ctx->instance_transforms, command.point_list.num_elements - 1);
             }
             else {
                 for (int i = 0; i < command.point_list.num_elements; i++) {
@@ -154,6 +202,12 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
 
 b32 imp_default_backend_deinit() {
     if (default_ctx != NULL) {
+        if (default_ctx->resources_ready) {
+            UnloadMesh(default_ctx->cylinder);
+            UnloadMesh(default_ctx->sphere);
+            UnloadMaterial(default_ctx->curve_material);
+        }
+
         if (default_ctx->window_open)
             CloseWindow();
 
