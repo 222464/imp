@@ -1,5 +1,8 @@
 #include "default_backend.h"
 
+#include <rlgl.h>
+#include <raymath.h>
+
 imp_DefaultBackendContext* default_ctx = NULL;
 
 const char* curve_vs =
@@ -10,6 +13,215 @@ const char* curve_fs =
 #include "shaders/curve.fs"
 ;
 
+// This is from Raylib but modified to not use matrix transforms, we will handle that manually in a shader
+void draw_instanced_data(Mesh mesh, Material material, imp_Vec3f* data, s32 instances) {
+    unsigned int instancesVboId = 0;
+    unsigned int instancesNextVboId = 0;
+
+    // Bind shader program
+    rlEnableShader(material.shader.id);
+
+    // Send required data to shader (matrices, values)
+    //-----------------------------------------------------
+    // Upload to shader material.colDiffuse
+    if (material.shader.locs[SHADER_LOC_COLOR_DIFFUSE] != -1)
+    {
+        float values[4] = {
+            (float)material.maps[MATERIAL_MAP_DIFFUSE].color.r/255.0f,
+            (float)material.maps[MATERIAL_MAP_DIFFUSE].color.g/255.0f,
+            (float)material.maps[MATERIAL_MAP_DIFFUSE].color.b/255.0f,
+            (float)material.maps[MATERIAL_MAP_DIFFUSE].color.a/255.0f
+        };
+
+        rlSetUniform(material.shader.locs[SHADER_LOC_COLOR_DIFFUSE], values, SHADER_UNIFORM_VEC4, 1);
+    }
+
+    // Upload to shader material.colSpecular (if location available)
+    if (material.shader.locs[SHADER_LOC_COLOR_SPECULAR] != -1)
+    {
+        float values[4] = {
+            (float)material.maps[SHADER_LOC_COLOR_SPECULAR].color.r/255.0f,
+            (float)material.maps[SHADER_LOC_COLOR_SPECULAR].color.g/255.0f,
+            (float)material.maps[SHADER_LOC_COLOR_SPECULAR].color.b/255.0f,
+            (float)material.maps[SHADER_LOC_COLOR_SPECULAR].color.a/255.0f
+        };
+
+        rlSetUniform(material.shader.locs[SHADER_LOC_COLOR_SPECULAR], values, SHADER_UNIFORM_VEC4, 1);
+    }
+
+    // Get a copy of current matrices to work with,
+    // just in case stereo render is required, and we need to modify them
+    // NOTE: At this point the modelview matrix just contains the view matrix (camera)
+    // That's because BeginMode3D() sets it and there is no model-drawing function
+    // that modifies it, all use rlPushMatrix() and rlPopMatrix()
+    Matrix matModel = MatrixIdentity();
+    Matrix matView = rlGetMatrixModelview();
+    Matrix matModelView = MatrixIdentity();
+    Matrix matProjection = rlGetMatrixProjection();
+
+    // Upload view and projection matrices (if locations available)
+    if (material.shader.locs[SHADER_LOC_MATRIX_VIEW] != -1) rlSetUniformMatrix(material.shader.locs[SHADER_LOC_MATRIX_VIEW], matView);
+    if (material.shader.locs[SHADER_LOC_MATRIX_PROJECTION] != -1) rlSetUniformMatrix(material.shader.locs[SHADER_LOC_MATRIX_PROJECTION], matProjection);
+
+    // Enable mesh VAO to attach new buffer
+    rlEnableVertexArray(mesh.vaoId);
+
+    instancesVboId = rlLoadVertexBuffer(data, instances*sizeof(imp_Vec3f), false);
+
+    rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_MATRIX_MODEL]);
+    rlSetVertexAttribute(material.shader.locs[SHADER_LOC_MATRIX_MODEL], 3, RL_FLOAT, 0, sizeof(imp_Vec3f), 0);
+    rlSetVertexAttributeDivisor(material.shader.locs[SHADER_LOC_MATRIX_MODEL], 1);
+
+    instancesNextVboId = rlLoadVertexBuffer(data + 1, instances*sizeof(imp_Vec3f), false);
+
+    rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_MATRIX_MODEL] + 1);
+    rlSetVertexAttribute(material.shader.locs[SHADER_LOC_MATRIX_MODEL] + 1, 3, RL_FLOAT, 0, sizeof(imp_Vec3f), 0);
+    rlSetVertexAttributeDivisor(material.shader.locs[SHADER_LOC_MATRIX_MODEL] + 1, 1);
+
+    rlDisableVertexBuffer();
+    rlDisableVertexArray();
+
+    // Accumulate internal matrix transform (push/pop) and view matrix
+    // NOTE: In this case, model instance transformation must be computed in the shader
+    matModelView = MatrixMultiply(rlGetMatrixTransform(), matView);
+
+    // Upload model normal matrix (if locations available)
+    if (material.shader.locs[SHADER_LOC_MATRIX_NORMAL] != -1) rlSetUniformMatrix(material.shader.locs[SHADER_LOC_MATRIX_NORMAL], MatrixTranspose(MatrixInvert(matModel)));
+    //-----------------------------------------------------
+
+    // Bind active texture maps (if available)
+    //for (int i = 0; i < MAX_MATERIAL_MAPS; i++)
+    //{
+    //    if (material.maps[i].texture.id > 0)
+    //    {
+    //        // Select current shader texture slot
+    //        rlActiveTextureSlot(i);
+
+    //        // Enable texture for active slot
+    //        if ((i == MATERIAL_MAP_IRRADIANCE) ||
+    //            (i == MATERIAL_MAP_PREFILTER) ||
+    //            (i == MATERIAL_MAP_CUBEMAP)) rlEnableTextureCubemap(material.maps[i].texture.id);
+    //        else rlEnableTexture(material.maps[i].texture.id);
+
+    //        rlSetUniform(material.shader.locs[SHADER_LOC_MAP_DIFFUSE + i], &i, SHADER_UNIFORM_INT, 1);
+    //    }
+    //}
+
+    // Try binding vertex array objects (VAO)
+    // or use VBOs if not possible
+    if (!rlEnableVertexArray(mesh.vaoId))
+    {
+        // Bind mesh VBO data: vertex position (shader-location = 0)
+        rlEnableVertexBuffer(mesh.vboId[0]);
+        rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_POSITION], 3, RL_FLOAT, 0, 0, 0);
+        rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_POSITION]);
+
+        // Bind mesh VBO data: vertex texcoords (shader-location = 1)
+        rlEnableVertexBuffer(mesh.vboId[1]);
+        rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TEXCOORD01], 2, RL_FLOAT, 0, 0, 0);
+        rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TEXCOORD01]);
+
+        if (material.shader.locs[SHADER_LOC_VERTEX_NORMAL] != -1)
+        {
+            // Bind mesh VBO data: vertex normals (shader-location = 2)
+            rlEnableVertexBuffer(mesh.vboId[2]);
+            rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_NORMAL], 3, RL_FLOAT, 0, 0, 0);
+            rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_NORMAL]);
+        }
+
+        // Bind mesh VBO data: vertex colors (shader-location = 3, if available)
+        if (material.shader.locs[SHADER_LOC_VERTEX_COLOR] != -1)
+        {
+            if (mesh.vboId[3] != 0)
+            {
+                rlEnableVertexBuffer(mesh.vboId[3]);
+                rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR], 4, RL_UNSIGNED_BYTE, 1, 0, 0);
+                rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR]);
+            }
+            else
+            {
+                // Set default value for unused attribute
+                // NOTE: Required when using default shader and no VAO support
+                float value[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                rlSetVertexAttributeDefault(material.shader.locs[SHADER_LOC_VERTEX_COLOR], value, SHADER_ATTRIB_VEC4, 4);
+                rlDisableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR]);
+            }
+        }
+
+        // Bind mesh VBO data: vertex tangents (shader-location = 4, if available)
+        if (material.shader.locs[SHADER_LOC_VERTEX_TANGENT] != -1)
+        {
+            rlEnableVertexBuffer(mesh.vboId[4]);
+            rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TANGENT], 4, RL_FLOAT, 0, 0, 0);
+            rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TANGENT]);
+        }
+
+        // Bind mesh VBO data: vertex texcoords2 (shader-location = 5, if available)
+        if (material.shader.locs[SHADER_LOC_VERTEX_TEXCOORD02] != -1)
+        {
+            rlEnableVertexBuffer(mesh.vboId[5]);
+            rlSetVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TEXCOORD02], 2, RL_FLOAT, 0, 0, 0);
+            rlEnableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_TEXCOORD02]);
+        }
+
+        if (mesh.indices != NULL) rlEnableVertexBufferElement(mesh.vboId[6]);
+    }
+
+    // WARNING: Disable vertex attribute color input if mesh can not provide that data (despite location being enabled in shader)
+    if (mesh.vboId[3] == 0) rlDisableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR]);
+
+    int eyeCount = 1;
+    if (rlIsStereoRenderEnabled()) eyeCount = 2;
+
+    for (int eye = 0; eye < eyeCount; eye++)
+    {
+        // Calculate model-view-projection matrix (MVP)
+        Matrix matModelViewProjection = MatrixIdentity();
+        if (eyeCount == 1) matModelViewProjection = MatrixMultiply(matModelView, matProjection);
+        else
+        {
+            // Setup current eye viewport (half screen width)
+            rlViewport(eye*rlGetFramebufferWidth()/2, 0, rlGetFramebufferWidth()/2, rlGetFramebufferHeight());
+            matModelViewProjection = MatrixMultiply(MatrixMultiply(matModelView, rlGetMatrixViewOffsetStereo(eye)), rlGetMatrixProjectionStereo(eye));
+        }
+
+        // Send combined model-view-projection matrix to shader
+        rlSetUniformMatrix(material.shader.locs[SHADER_LOC_MATRIX_MVP], matModelViewProjection);
+
+        // Draw mesh instanced
+        if (mesh.indices != NULL) rlDrawVertexArrayElementsInstanced(0, mesh.triangleCount*3, 0, instances);
+        else rlDrawVertexArrayInstanced(0, mesh.vertexCount, instances);
+    }
+
+    // Unbind all bound texture maps
+    //for (int i = 0; i < MAX_MATERIAL_MAPS; i++)
+    //{
+    //    if (material.maps[i].texture.id > 0)
+    //    {
+    //        // Select current shader texture slot
+    //        rlActiveTextureSlot(i);
+
+    //        // Disable texture for active slot
+    //        if ((i == MATERIAL_MAP_IRRADIANCE) ||
+    //            (i == MATERIAL_MAP_PREFILTER) ||
+    //            (i == MATERIAL_MAP_CUBEMAP)) rlDisableTextureCubemap();
+    //        else rlDisableTexture();
+    //    }
+    //}
+
+    // Disable all possible vertex array objects (or VBOs)
+    rlDisableVertexArray();
+    rlDisableVertexBuffer();
+    rlDisableVertexBufferElement();
+
+    // Disable shader program
+    rlDisableShader();
+
+    // Remove instance transforms buffer
+    rlUnloadVertexBuffer(instancesVboId);
+    rlUnloadVertexBuffer(instancesNextVboId);
+}
+
 b32 imp_default_backend_init() {
     assert(default_ctx == NULL && "Default backend already initialized!");
 
@@ -19,8 +231,6 @@ b32 imp_default_backend_init() {
     (*default_ctx) = (imp_DefaultBackendContext){0};
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
-
-    default_ctx->instance_transforms = (Matrix*)malloc(IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS * sizeof(Matrix));
 
     return true;
 }
@@ -55,8 +265,10 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
         default_ctx->curve_shader = LoadShaderFromMemory(curve_vs, curve_fs);
 
         default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(default_ctx->curve_shader, "mvp");
+        default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(default_ctx->curve_shader, "instancePosition");
+        default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MODEL + 1] = GetShaderLocationAttrib(default_ctx->curve_shader, "instancePositionNext");
         default_ctx->curve_col_diffuse_loc = GetShaderLocation(default_ctx->curve_shader, "color");
-        default_ctx->curve_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(default_ctx->curve_shader, "instanceTransform");
+        default_ctx->curve_thickness_loc = GetShaderLocation(default_ctx->curve_shader, "thickness");
 
         default_ctx->curve_material = LoadMaterialDefault();
         default_ctx->curve_material.shader = default_ctx->curve_shader;
@@ -106,69 +318,12 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
             imp_Color use_color = command.point_list.color;
 
             if (command.point_list.style == IMP_POINT_LIST_STYLE_CURVE) {
-                imp_Vec3f point_prev = command.point_list.data[0];
-
-                if (command.point_list.num_elements > IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS)
-                    return false;
-
-                for (int i = 1; i < command.point_list.num_elements; i++) {
-                    imp_Vec3f point = command.point_list.data[i];
-
-                    imp_Vec3f diff = HMM_SubV3(point, point_prev);
-                    
-                    f32 length = HMM_LenV3(diff);
-
-                    // Determine transform
-                    imp_Mat4 transform = HMM_Scale((imp_Vec3f){ command.point_list.thickness, length, command.point_list.thickness});
-
-                    imp_Vec3f up;
-
-                    if (HMM_EqV3(diff, (imp_Vec3f){ 0.0f, 1.0f, 0.0f }))
-                        up = (imp_Vec3f){ 0.0f, 0.0f, 1.0f };
-                    else
-                        up = (imp_Vec3f){ 0.0f, 1.0f, 0.0f };
-
-                    imp_Vec3f F = HMM_NormV3(diff);
-                    imp_Vec3f S = HMM_NormV3(HMM_Cross(F, up));
-                    imp_Vec3f U = HMM_Cross(S, F);
-
-                    imp_Mat4 rot;
-
-                    rot.Elements[0][0] = S.X;
-                    rot.Elements[0][1] = S.Y;
-                    rot.Elements[0][2] = S.Z;
-                    rot.Elements[0][3] = 0.0f;
-
-                    rot.Elements[1][0] = F.X;
-                    rot.Elements[1][1] = F.Y;
-                    rot.Elements[1][2] = F.Z;
-                    rot.Elements[1][3] = 0.0f;
-
-                    rot.Elements[2][0] = U.X;
-                    rot.Elements[2][1] = U.Y;
-                    rot.Elements[2][2] = U.Z;
-                    rot.Elements[2][3] = 0.0f;
-
-                    rot.Elements[3][0] = point_prev.X;
-                    rot.Elements[3][1] = point_prev.Y;
-                    rot.Elements[3][2] = point_prev.Z;
-                    rot.Elements[3][3] = 1.0f;
-
-                    transform = HMM_MulM4(rot, transform);
-
-                    // Transpose for Raylib
-                    transform = HMM_Transpose(transform);
-
-                    default_ctx->instance_transforms[i - 1] = *(Matrix*)(transform.Elements);
-
-                    point_prev = point;
-                }
-
                 Vector4 use_colorf = (Vector4){ use_color.R / 255.0f, use_color.G / 255.0f, use_color.B / 255.0f, use_color.A / 255.0f };
 
                 SetShaderValue(default_ctx->curve_shader, default_ctx->curve_col_diffuse_loc, &use_colorf, SHADER_UNIFORM_VEC4);
+                SetShaderValue(default_ctx->curve_shader, default_ctx->curve_thickness_loc, &command.point_list.thickness, SHADER_UNIFORM_FLOAT);
 
-                DrawMeshInstanced(default_ctx->cylinder, default_ctx->curve_material, default_ctx->instance_transforms, command.point_list.num_elements - 1);
+                draw_instanced_data(default_ctx->cylinder, default_ctx->curve_material, command.point_list.data, command.point_list.num_elements - 1);
             }
             else {
                 for (int i = 0; i < command.point_list.num_elements; i++) {
@@ -255,8 +410,6 @@ b32 imp_default_backend_deinit() {
 
         if (default_ctx->window_open)
             CloseWindow();
-
-        free(default_ctx->instance_transforms);
 
         free(default_ctx);
     }

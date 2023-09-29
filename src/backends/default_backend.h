@@ -4,8 +4,6 @@
 
 #include <raylib.h>
 
-#define IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS (0x1 << 15)
-
 typedef struct {
     b32 window_open;
     imp_Camera camera;
@@ -15,8 +13,7 @@ typedef struct {
     Shader curve_shader;
     Material curve_material;
     s32 curve_col_diffuse_loc;
-
-    Matrix* instance_transforms;
+    s32 curve_thickness_loc;
 
     b32 resources_ready;
 
