@@ -12,6 +12,16 @@ endif()
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
+############################################################################
+# Find Raylib
+
+find_package(raylib REQUIRED)
+
+if(raylib_FOUND)
+    message(STATUS "Found existing Raylib in ${raylib_INCLUDE_DIRS}")
+    include_directories(${raylib_INCLUDE_DIRS})
+endif()
+
 set(IMP_INCLUDE_DIR "src")
 
 include_directories(${IMP_INCLUDE_DIR})
@@ -21,11 +31,15 @@ set(IMP_SRC
     "src/constructs.c"
     "src/imp.c"
     "src/utils.c"
+    "src/backends/default_backend.c"
+    "src/backends/dynamic_backend.c"
 )
 
 add_library(imp ${IMP_SRC})
 
 set_target_properties(imp PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+target_link_libraries(imp raylib)
 
 install(TARGETS imp
         RUNTIME DESTINATION bin
