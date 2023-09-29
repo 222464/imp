@@ -4,7 +4,7 @@
 
 #include <raylib.h>
 
-#define IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS 4096
+#define IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS (0x1 << 15)
 
 typedef struct {
     b32 window_open;
@@ -16,9 +16,11 @@ typedef struct {
     Material curve_material;
     s32 curve_col_diffuse_loc;
 
-    Matrix instance_transforms[IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS];
+    Matrix* instance_transforms;
 
     b32 resources_ready;
+
+    f64 t;
 } imp_DefaultBackendContext;
 
 b32 imp_default_backend_init();

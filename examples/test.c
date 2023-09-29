@@ -5,10 +5,14 @@ int main() {
 
     imp_init_default(&ctx);
 
-    imp_Vec3f data[32];
+    const s32 num_elements = 0x1 << 15;
 
-    for (int i = 0; i < 32; i++) {
-        data[i] = (imp_Vec3f){ .X = sin(i * 0.1f), .Y = cos(i * 0.1f), .Z = 0.0f };
+    imp_Vec3f* data = (imp_Vec3f*)malloc(num_elements * sizeof(imp_Vec3f));
+
+    for (int i = 0; i < num_elements; i++) {
+        f32 r = (f32)i / (num_elements - 1) * HMM_PI * 2.0f;
+
+        data[i] = (imp_Vec3f){ .X = sin(r * 3.0f) * sin(r * 5.0f - 0.3f), .Y = cos(r * 1.0f), .Z = sin(r * 2.0f + 0.5f) };
     }
 
     imp_canvas(&ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
@@ -20,12 +24,14 @@ int main() {
 
         imp_camera(&ctx, camera);
 
-        imp_point_list(&ctx, data, 32, IMP_POINT_LIST_STYLE_CURVE);
+        imp_point_list(&ctx, data, num_elements, IMP_POINT_LIST_STYLE_CURVE);
 
         imp_axes(&ctx, 10);
 
         imp_end(&ctx);
     }
+
+    free(data);
 
     imp_deinit(&ctx);
 

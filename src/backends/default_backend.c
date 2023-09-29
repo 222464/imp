@@ -20,6 +20,8 @@ b32 imp_default_backend_init() {
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
 
+    default_ctx->instance_transforms = (Matrix*)malloc(IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS * sizeof(Matrix));
+
     return true;
 }
 
@@ -59,6 +61,8 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
         default_ctx->curve_material = LoadMaterialDefault();
         default_ctx->curve_material.shader = default_ctx->curve_shader;
 
+        default_ctx->t = GetTime();
+
         default_ctx->resources_ready = true;
     }
 
@@ -74,6 +78,12 @@ b32 imp_default_backend_set_camera(imp_Camera camera) {
 }
 
 b32 imp_default_backend_run_commands(imp_CommandList command_list) {
+    f64 time_prev = default_ctx->t;
+
+    default_ctx->t = GetTime();
+
+    f64 dt = default_ctx->t - time_prev;
+
     BeginDrawing();
 
     ClearBackground((Color){ default_ctx->canvas.clear_color.R, default_ctx->canvas.clear_color.G, default_ctx->canvas.clear_color.B, default_ctx->canvas.clear_color.A });
@@ -98,6 +108,9 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
             if (command.point_list.style == IMP_POINT_LIST_STYLE_CURVE) {
                 imp_Vec3f point_prev = command.point_list.data[0];
 
+                if (command.point_list.num_elements > IMP_DEFAULT_BACKEND_MAX_INSTANCE_TRANFORMS)
+                    return false;
+
                 for (int i = 1; i < command.point_list.num_elements; i++) {
                     imp_Vec3f point = command.point_list.data[i];
 
@@ -106,12 +119,42 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
                     f32 length = HMM_LenV3(diff);
 
                     // Determine transform
-                    imp_Mat4 transform = HMM_MulM4(HMM_Rotate_LH(HMM_PI * 0.5f, (imp_Vec3f){ 0.0f, 0.0f, 1.0f }), HMM_Scale((imp_Vec3f){ command.point_list.thickness, length, command.point_list.thickness}));
+                    imp_Mat4 transform = HMM_Scale((imp_Vec3f){ command.point_list.thickness, length, command.point_list.thickness});
+
+                    imp_Vec3f up;
 
                     if (HMM_EqV3(diff, (imp_Vec3f){ 0.0f, 1.0f, 0.0f }))
-                        transform = HMM_MulM4(HMM_Translate(point_prev), HMM_MulM4(HMM_LookAt_LH(point_prev, point, (imp_Vec3f){ 0.0f, 0.0f, 1.0f }), transform));
+                        up = (imp_Vec3f){ 0.0f, 0.0f, 1.0f };
                     else
-                        transform = HMM_MulM4(HMM_Translate(point_prev), HMM_MulM4(HMM_LookAt_LH(point_prev, point, (imp_Vec3f){ 0.0f, 1.0f, 0.0f }), transform));
+                        up = (imp_Vec3f){ 0.0f, 1.0f, 0.0f };
+
+                    imp_Vec3f F = HMM_NormV3(diff);
+                    imp_Vec3f S = HMM_NormV3(HMM_Cross(F, up));
+                    imp_Vec3f U = HMM_Cross(S, F);
+
+                    imp_Mat4 rot;
+
+                    rot.Elements[0][0] = S.X;
+                    rot.Elements[0][1] = S.Y;
+                    rot.Elements[0][2] = S.Z;
+                    rot.Elements[0][3] = 0.0f;
+
+                    rot.Elements[1][0] = F.X;
+                    rot.Elements[1][1] = F.Y;
+                    rot.Elements[1][2] = F.Z;
+                    rot.Elements[1][3] = 0.0f;
+
+                    rot.Elements[2][0] = U.X;
+                    rot.Elements[2][1] = U.Y;
+                    rot.Elements[2][2] = U.Z;
+                    rot.Elements[2][3] = 0.0f;
+
+                    rot.Elements[3][0] = point_prev.X;
+                    rot.Elements[3][1] = point_prev.Y;
+                    rot.Elements[3][2] = point_prev.Z;
+                    rot.Elements[3][3] = 1.0f;
+
+                    transform = HMM_MulM4(rot, transform);
 
                     // Transpose for Raylib
                     transform = HMM_Transpose(transform);
@@ -193,6 +236,8 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
         }
     }
 
+    DrawText(TextFormat("FPS: %d", (int)(1.0 / HMM_MAX(0.0001, dt))), 20, 20, 30, RAYWHITE);
+
     EndMode2D();
 
     EndDrawing();
@@ -210,6 +255,8 @@ b32 imp_default_backend_deinit() {
 
         if (default_ctx->window_open)
             CloseWindow();
+
+        free(default_ctx->instance_transforms);
 
         free(default_ctx);
     }
