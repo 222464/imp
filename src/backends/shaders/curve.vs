@@ -25,7 +25,7 @@ void main() {
     vec3 S = normalize(cross(F, up));
     vec3 U = cross(S, F);
 
-    F *= thickness;
+    F *= length(diff);
     S *= thickness;
     U *= thickness;
 

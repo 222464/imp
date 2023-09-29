@@ -5,14 +5,14 @@ int main() {
 
     imp_init_default(&ctx);
 
-    const s32 num_elements = 0x1 << 15;
+    const s32 num_elements = 0x1 << 10;
 
     imp_Vec3f* data = (imp_Vec3f*)malloc(num_elements * sizeof(imp_Vec3f));
 
     for (int i = 0; i < num_elements; i++) {
         f32 r = (f32)i / (num_elements - 1) * HMM_PI * 2.0f;
 
-        data[i] = (imp_Vec3f){ .X = sin(r * 3.0f) * sin(r * 5.0f - 0.3f), .Y = cos(r * 1.0f), .Z = sin(r * 2.0f + 0.5f) };
+        data[i] = (imp_Vec3f){ .X = sin(r * 3.0f) * sin(r * 5.0f - 0.3f), .Y = sin(r * 1.0f) * sin(r * 8.0f + 1.5f), .Z = sin(r * 2.0f + 0.5f) * sin(r * 7.0f - 0.9f) };
     }
 
     imp_canvas(&ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
