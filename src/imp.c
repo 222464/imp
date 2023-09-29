@@ -108,34 +108,28 @@ void imp_orbit_camera(imp_Context* ctx, f32 move_sensitivity, f32 zoom_sensitivi
     imp_Vec3f orbit = HMM_SubV3(ctx->camera.position, ctx->camera.target);
     imp_Vec3f dir = HMM_NormV3(orbit);
 
+    imp_Vec3f up = (imp_Vec3f){ 0.0f, 1.0f, 0.0f };
+
+    imp_Vec3f F = dir;
+    imp_Vec3f S = HMM_Cross(F, up);
+    imp_Vec3f U = HMM_Cross(F, S);
+
     f32 dist = HMM_LenV3(orbit);
 
     f32 new_dist = HMM_MAX(IMP_EPSILON, dist - ctx->inputs.mouse_scroll * zoom_sensitivity);
 
-    f32 pitch = asinf(dir.Y);
-
-    f32 distXZ = HMM_LenV2((imp_Vec2f){ dir.X, dir.Z });
-    f32 yaw = atan2f(dir.Z, dir.X);
-
-    f32 new_pitch;
-    f32 new_yaw;
+    imp_Vec3f new_dir;
 
     if (ctx->inputs.mouse_down_right) {
-        new_pitch = pitch + diff.Y * move_sensitivity;
-        new_yaw = yaw + diff.X * move_sensitivity;
+        new_dir = HMM_AddV3(dir, HMM_MulV3F(S, diff.X * move_sensitivity));
+        new_dir = HMM_AddV3(new_dir, HMM_MulV3F(U, -diff.Y * move_sensitivity));
     }
-    else {
-        new_pitch = pitch;
-        new_yaw = yaw;
-    }
+    else
+        new_dir = dir;
 
-    dir.Y = sinf(new_pitch);
-    dir.Z = sinf(new_yaw) * distXZ;
-    dir.X = cosf(new_yaw) * distXZ;
+    new_dir = HMM_NormV3(new_dir);
 
-    dir = HMM_NormV3(dir);
-
-    orbit = HMM_MulV3F(dir, new_dist);
+    orbit = HMM_MulV3F(new_dir, new_dist);
 
     ctx->camera.position = HMM_AddV3(orbit, ctx->camera.target);
 }
