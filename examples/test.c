@@ -34,8 +34,6 @@ int main() {
 
     imp_canvas(&ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
 
-    imp_Camera camera = IMP_DEFAULT_CAMERA3D;
-
     while (!ctx.inputs.exit) {
         imp_orbit_camera(&ctx, 0.01f, 0.1f);
 
@@ -52,6 +50,7 @@ int main() {
 
     free(data0);
     free(data1);
+    free(data2);
 
     imp_deinit(&ctx);
 
