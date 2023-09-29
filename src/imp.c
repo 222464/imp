@@ -50,6 +50,8 @@ void imp_init(imp_Context* ctx, b32 (*backend_set_canvas)(imp_Canvas, const char
     ctx->backend_get_inputs = backend_get_inputs;
 
     ctx->palette = IMP_PALETTE_DARK_MODE;
+
+    ctx->camera = IMP_DEFAULT_CAMERA3D;
 }
 
 void imp_init_default(imp_Context* ctx) {
@@ -83,7 +85,10 @@ void imp_canvas(imp_Context* ctx, imp_Canvas canvas, const char* title) {
 
 void imp_begin(imp_Context* ctx) {
     // Get inputs
+    ctx->inputs_prev = ctx->inputs;
     (*ctx->backend_get_inputs)(&ctx->inputs);
+
+    (*ctx->backend_set_camera)(ctx->camera);
 
     ctx->char_pos = 0;
     ctx->command_list.num_commands = 0;
@@ -95,8 +100,44 @@ void imp_end(imp_Context* ctx) {
 
 void imp_camera(imp_Context* ctx, imp_Camera camera) {
     ctx->camera = camera;
+}
 
-    (*ctx->backend_set_camera)(camera);
+void imp_orbit_camera(imp_Context* ctx, f32 move_sensitivity, f32 zoom_sensitivity) {
+    imp_Vec2f diff = HMM_SubV2(ctx->inputs.mouse, ctx->inputs_prev.mouse);
+
+    imp_Vec3f orbit = HMM_SubV3(ctx->camera.position, ctx->camera.target);
+    imp_Vec3f dir = HMM_NormV3(orbit);
+
+    f32 dist = HMM_LenV3(orbit);
+
+    f32 new_dist = HMM_MAX(IMP_EPSILON, dist - ctx->inputs.mouse_scroll * zoom_sensitivity);
+
+    f32 pitch = asinf(dir.Y);
+
+    f32 distXZ = HMM_LenV2((imp_Vec2f){ dir.X, dir.Z });
+    f32 yaw = atan2f(dir.Z, dir.X);
+
+    f32 new_pitch;
+    f32 new_yaw;
+
+    if (ctx->inputs.mouse_down_right) {
+        new_pitch = pitch + diff.Y * move_sensitivity;
+        new_yaw = yaw + diff.X * move_sensitivity;
+    }
+    else {
+        new_pitch = pitch;
+        new_yaw = yaw;
+    }
+
+    dir.Y = sinf(new_pitch);
+    dir.Z = sinf(new_yaw) * distXZ;
+    dir.X = cosf(new_yaw) * distXZ;
+
+    dir = HMM_NormV3(dir);
+
+    orbit = HMM_MulV3F(dir, new_dist);
+
+    ctx->camera.position = HMM_AddV3(orbit, ctx->camera.target);
 }
 
 void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style) {

@@ -240,6 +240,15 @@ b32 imp_default_backend_get_inputs(imp_Inputs* inputs) {
 
     inputs->exit = WindowShouldClose();
 
+    inputs->mouse_down_left = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    inputs->mouse_down_right = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
+
+    Vector2 mouse_pos = GetMousePosition();
+
+    inputs->mouse = (imp_Vec2f){ mouse_pos.x, mouse_pos.y };
+
+    inputs->mouse_scroll = GetMouseWheelMove();
+
     return true;
 }
 
@@ -259,8 +268,8 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
 
     if (!default_ctx->resources_ready) {
         // get resources
-        default_ctx->cylinder = GenMeshCylinder(1.0f, 1.0f, 8);
-        default_ctx->sphere = GenMeshSphere(1.0f, 8, 8);
+        default_ctx->cylinder = GenMeshCylinder(1.0f, 1.0f, 3);
+        default_ctx->sphere = GenMeshSphere(1.0f, 6, 6);
 
         default_ctx->curve_shader = LoadShaderFromMemory(curve_vs, curve_fs);
 

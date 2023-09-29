@@ -10,11 +10,14 @@
 #define IMP_DEFAULT_THICKNESS 0.005f
 #define IMP_DEFAULT_TICK_THICKNESS 0.015f
 
+#define IMP_EPSILON 0.00001f
+
 typedef struct {
     b32 exit;
     imp_Vec2f mouse;
     f32 mouse_scroll;
-    s32 mouse_down;
+    s32 mouse_down_left;
+    s32 mouse_down_right;
 } imp_Inputs;
 
 typedef struct {
@@ -69,6 +72,7 @@ void imp_begin(imp_Context* ctx);
 void imp_end(imp_Context* ctx);
 
 void imp_camera(imp_Context* ctx, imp_Camera camera);
+void imp_orbit_camera(imp_Context* ctx, f32 move_sensitivity, f32 zoom_sensitivity);
 
 void imp_point_list(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style);
 void imp_point_list_ex(imp_Context* ctx, imp_Vec3f* data, s32 num_elements, imp_PointListStyle style, imp_Color color, f32 thickness);
