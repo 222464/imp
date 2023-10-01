@@ -1,8 +1,5 @@
 #include "imp.h"
 
-#include "backends/default_backend.h"
-#include "backends/dynamic_backend.h"
-
 #ifndef IMP_VSNSPRINTF
 #define STB_SPRINTF_IMPLEMENTATION
 #include "third_party/stb_sprintf.h"
@@ -41,61 +38,56 @@ imp_Str imp_strf(imp_Context* ctx, char* fmt, ...) {
     return result;
 }
 
-void imp_init(imp_Context* ctx, b32 (*backend_set_canvas)(imp_Canvas, const char*), b32 (*backend_set_camera)(imp_Camera), b32 (*backend_run_commands)(imp_CommandList), b32 (*backend_get_inputs)(imp_Inputs* inputs)) {
+void imp_init(imp_Context* ctx, imp_Backend *backend) {
     *ctx = (imp_Context){0};
 
-    ctx->backend_set_canvas = backend_set_canvas;
-    ctx->backend_set_camera = backend_set_camera;
-    ctx->backend_run_commands = backend_run_commands;
-    ctx->backend_get_inputs = backend_get_inputs;
+	ctx->backend = backend;
 
     ctx->palette = IMP_PALETTE_DARK_MODE;
 
     ctx->camera = IMP_DEFAULT_CAMERA3D;
 }
 
-void imp_init_default(imp_Context* ctx) {
-    imp_default_backend_init();
-
-    ctx->backend_type = IMP_BACKEND_TYPE_DEFAULT;
-
-    imp_init(ctx, &imp_default_backend_set_canvas, &imp_default_backend_set_camera, &imp_default_backend_run_commands, &imp_default_backend_get_inputs);
-}
-
-void imp_init_dynamic(imp_Context* ctx, const char* path) {
-    imp_dynamic_backend_init(path);
-
-    ctx->backend_type = IMP_BACKEND_TYPE_DYNAMIC;
-
-    imp_init(ctx, &imp_dynamic_backend_set_canvas, &imp_dynamic_backend_set_camera, &imp_dynamic_backend_run_commands, &imp_dynamic_backend_get_inputs);
-}
-
 void imp_deinit(imp_Context* ctx) {
-    if (ctx->backend_type == IMP_BACKEND_TYPE_DEFAULT)
-        imp_default_backend_deinit();
-    else if (ctx->backend_type == IMP_BACKEND_TYPE_DYNAMIC)
-        imp_dynamic_backend_deinit();
+	// Context should probably not own the backend for multiple contexts.
+	//ctx->backend->deinit(ctx->backend);
+}
+
+imp_Context *imp_make_context(imp_Backend *backend) {
+	imp_Context *ctx = IMP_MALLOC(sizeof(imp_Context));
+
+	imp_init(ctx, backend);
+
+	return ctx;
+}
+
+void imp_destroy_context(imp_Context *ctx) {
+	// TODO: Maybe have IMP_ASSERT.
+	if (ctx) {
+		imp_deinit(ctx);
+		IMP_FREE(ctx);
+	}
 }
 
 void imp_canvas(imp_Context* ctx, imp_Canvas canvas, const char* title) {
     ctx->canvas = canvas;
 
-    (*ctx->backend_set_canvas)(canvas, title);
+    (*ctx->backend->set_canvas)(ctx->backend, canvas, title);
 }
 
 void imp_begin(imp_Context* ctx) {
     // Get inputs
     ctx->inputs_prev = ctx->inputs;
-    (*ctx->backend_get_inputs)(&ctx->inputs);
+    (*ctx->backend->get_inputs)(ctx->backend, &ctx->inputs);
 
-    (*ctx->backend_set_camera)(ctx->camera);
+    (*ctx->backend->set_camera)(ctx->backend, ctx->camera);
 
     ctx->char_pos = 0;
     ctx->command_list.num_commands = 0;
 }
 
 void imp_end(imp_Context* ctx) {
-    (*ctx->backend_run_commands)(ctx->command_list);
+    (*ctx->backend->run_commands)(ctx->backend, ctx->command_list);
 }
 
 void imp_camera(imp_Context* ctx, imp_Camera camera) {

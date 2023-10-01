@@ -1,36 +1,17 @@
-#pragma once
+#ifndef IMP_DEFAULT_BACKEND_HEADER
+#define IMP_DEFAULT_BACKEND_HEADER
 
 #include "../imp.h"
 
-#include <raylib.h>
+b32 imp_default_backend_init(imp_Backend *backend);
+b32 imp_default_backend_deinit(imp_Backend *backend);
 
-typedef struct {
-    b32 window_open;
-    imp_Camera camera;
-    imp_Canvas canvas;
-    Mesh cylinder;
-    Mesh sphere;
-    Shader curve_shader;
-    Material curve_material;
-    s32 curve_col_diffuse_loc;
-    s32 curve_thickness_loc;
+imp_Backend *imp_make_default_backend();
+void imp_destroy_default_backend(imp_Backend *backend);
 
-    b32 resources_ready;
+b32 imp_default_backend_set_canvas(imp_Backend *backend, imp_Canvas canvas, const char* title);
+b32 imp_default_backend_set_camera(imp_Backend *backend, imp_Camera camera);
+b32 imp_default_backend_get_inputs(imp_Backend *backend, imp_Inputs* inputs);
+b32 imp_default_backend_run_commands(imp_Backend *backend, imp_CommandList command_list);
 
-    f64 t;
-} imp_DefaultBackendContext;
-
-b32 imp_default_backend_init();
-
-b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title);
-
-b32 imp_default_backend_set_camera(imp_Camera camera);
-
-b32 imp_default_backend_get_inputs(imp_Inputs* inputs);
-
-b32 imp_default_backend_run_commands(imp_CommandList command_list);
-
-b32 imp_default_backend_deinit();
-
-
-
+#endif
