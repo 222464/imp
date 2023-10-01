@@ -1,4 +1,7 @@
-#include "../src/imp.h"
+// Call them implementations rather than backends?
+// Since they can be included just like that due to including imp.h themselves.
+#include "../src/backends/default_backend.h"
+
 int main() {
     // Bunch of data
     const s32 num_elements = 0x1 << 10;
@@ -28,31 +31,31 @@ int main() {
     }
 
     // IMP code
-    imp_Context ctx;
+	imp_Backend *backend = imp_make_default_backend();
+    imp_Context *ctx = imp_make_context(backend);
 
-    imp_init_default(&ctx);
+    imp_canvas(ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
 
-    imp_canvas(&ctx, (imp_Canvas){ .size = { .X = 1280, .Y = 720 }, .clear_color = IMP_DARK_GRAY }, "Test");
+    while (!ctx->inputs.exit) {
+        imp_orbit_camera(ctx, 0.01f, 0.1f);
 
-    while (!ctx.inputs.exit) {
-        imp_orbit_camera(&ctx, 0.01f, 0.1f);
+        imp_begin(ctx);
 
-        imp_begin(&ctx);
+        imp_point_list_ex(ctx, data0, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_RED, IMP_DEFAULT_THICKNESS);
+        imp_point_list_ex(ctx, data1, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_GREEN, IMP_DEFAULT_THICKNESS);
+        imp_point_list_ex(ctx, data2, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_BLUE, IMP_DEFAULT_THICKNESS);
 
-        imp_point_list_ex(&ctx, data0, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_RED, IMP_DEFAULT_THICKNESS);
-        imp_point_list_ex(&ctx, data1, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_GREEN, IMP_DEFAULT_THICKNESS);
-        imp_point_list_ex(&ctx, data2, num_elements, IMP_POINT_LIST_STYLE_CURVE, IMP_BLUE, IMP_DEFAULT_THICKNESS);
+        imp_axes(ctx, 10);
 
-        imp_axes(&ctx, 10);
-
-        imp_end(&ctx);
+        imp_end(ctx);
     }
 
     free(data0);
     free(data1);
     free(data2);
 
-    imp_deinit(&ctx);
+	imp_destroy_context(ctx);
+	imp_destroy_default_backend(backend);
 
     return 0;
 }

@@ -1,9 +1,25 @@
 #include "default_backend.h"
 
+#include <raylib.h>
 #include <rlgl.h>
 #include <raymath.h>
 
-imp_DefaultBackendContext* default_ctx = NULL;
+typedef struct imp_DefaultBackendContext {
+    b32 window_open;
+    imp_Camera camera;
+    imp_Canvas canvas;
+    Mesh cylinder;
+    Mesh sphere;
+    Shader curve_shader;
+    Material curve_material;
+    s32 curve_col_diffuse_loc;
+    s32 curve_thickness_loc;
+
+    b32 resources_ready;
+
+    f64 t;
+} imp_DefaultBackendContext;
+
 
 const char* curve_vs =
 #include "shaders/curve.vs"
@@ -222,37 +238,65 @@ void draw_instanced_data(Mesh mesh, Material material, imp_Vec3f* data, s32 inst
     rlUnloadVertexBuffer(instancesNextVboId);
 }
 
-b32 imp_default_backend_init() {
+b32 imp_default_backend_init(imp_Backend *backend) {
     assert(default_ctx == NULL && "Default backend already initialized!");
 
+	backend->init = imp_default_backend_init;
+	backend->deinit = imp_default_backend_deinit;
+	backend->set_canvas = imp_default_backend_set_canvas;
+	backend->set_camera = imp_default_backend_set_camera;
+	backend->get_inputs = imp_default_backend_get_inputs;
+	backend->run_commands = imp_default_backend_run_commands;
+
     // Allocate context for this backend
-    default_ctx = (imp_DefaultBackendContext*)malloc(sizeof(imp_DefaultBackendContext));
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext*)IMP_MALLOC(sizeof(imp_DefaultBackendContext));
 
     (*default_ctx) = (imp_DefaultBackendContext){0};
+
+	backend->data = (void *)default_ctx;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT);
 
     return true;
 }
 
-b32 imp_default_backend_get_inputs(imp_Inputs* inputs) {
-    assert(default_ctx != NULL && "Need a backend context in order to get input!");
+b32 imp_default_backend_deinit(imp_Backend *backend) {
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext *)backend->data;
 
-    inputs->exit = WindowShouldClose();
+    if (default_ctx != NULL) {
+        if (default_ctx->resources_ready) {
+            UnloadMesh(default_ctx->cylinder);
+            UnloadMesh(default_ctx->sphere);
+            UnloadMaterial(default_ctx->curve_material);
+        }
 
-    inputs->mouse_down_left = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-    inputs->mouse_down_right = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
+        if (default_ctx->window_open)
+            CloseWindow();
 
-    Vector2 mouse_pos = GetMousePosition();
-
-    inputs->mouse = (imp_Vec2f){ mouse_pos.x, mouse_pos.y };
-
-    inputs->mouse_scroll = GetMouseWheelMove();
+        IMP_FREE(default_ctx);
+    }
 
     return true;
 }
 
-b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
+imp_Backend *imp_make_default_backend() {
+	imp_Backend *backend = IMP_MALLOC(sizeof(imp_Backend));
+
+	imp_default_backend_init(backend);
+
+	return backend;
+}
+
+void imp_destroy_default_backend(imp_Backend *backend) {
+	if (backend) {
+		imp_default_backend_deinit(backend);
+		IMP_FREE(backend);
+	}
+}
+
+b32 imp_default_backend_set_canvas(imp_Backend *backend, imp_Canvas canvas, const char* title) {
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext *)backend->data;
+
     assert(default_ctx != NULL && "Need a backend context in order to make a canvas!");
 
     // If already open, make a new one
@@ -290,7 +334,9 @@ b32 imp_default_backend_set_canvas(imp_Canvas canvas, const char* title) {
     return true;
 }
 
-b32 imp_default_backend_set_camera(imp_Camera camera) {
+b32 imp_default_backend_set_camera(imp_Backend *backend, imp_Camera camera) {
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext *)backend->data;
+
     assert(default_ctx != NULL && "Need a backend context in order to set a camera!");
 
     default_ctx->camera = camera;
@@ -298,7 +344,28 @@ b32 imp_default_backend_set_camera(imp_Camera camera) {
     return true;
 }
 
-b32 imp_default_backend_run_commands(imp_CommandList command_list) {
+b32 imp_default_backend_get_inputs(imp_Backend *backend, imp_Inputs* inputs) {
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext *)backend->data;
+
+    assert(default_ctx != NULL && "Need a backend context in order to get input!");
+
+    inputs->exit = WindowShouldClose();
+
+    inputs->mouse_down_left = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    inputs->mouse_down_right = IsMouseButtonDown(MOUSE_RIGHT_BUTTON);
+
+    Vector2 mouse_pos = GetMousePosition();
+
+    inputs->mouse = (imp_Vec2f){ mouse_pos.x, mouse_pos.y };
+
+    inputs->mouse_scroll = GetMouseWheelMove();
+
+    return true;
+}
+
+b32 imp_default_backend_run_commands(imp_Backend *backend, imp_CommandList command_list) {
+	imp_DefaultBackendContext* default_ctx = (imp_DefaultBackendContext *)backend->data;
+
     f64 time_prev = default_ctx->t;
 
     default_ctx->t = GetTime();
@@ -409,19 +476,3 @@ b32 imp_default_backend_run_commands(imp_CommandList command_list) {
     return true;
 }
 
-b32 imp_default_backend_deinit() {
-    if (default_ctx != NULL) {
-        if (default_ctx->resources_ready) {
-            UnloadMesh(default_ctx->cylinder);
-            UnloadMesh(default_ctx->sphere);
-            UnloadMaterial(default_ctx->curve_material);
-        }
-
-        if (default_ctx->window_open)
-            CloseWindow();
-
-        free(default_ctx);
-    }
-
-    return true;
-}
